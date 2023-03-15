@@ -166,4 +166,68 @@ ninety_five_ci
 #this is wrong 
 
 
+##### 4.15 #####
 
+bwght <- lm(bwght ~ cigs + parity + faminc, data = bwght)
+summary(bwght)
+#R^2 = 0.0348 vs 0.0387 previously
+
+##### 4.16 #####
+
+#i
+mlb <- lm(log(salary) ~ years + gamesyr + bavg + hrunsyr, data = mlb1)
+summary(mlb)
+#hrunsyr is now highly significant (was not significant before)
+#the size of the coefficient has increased. If home runs increases by 
+#10 per year, salary goes up 30%. 
+
+#ii
+mlb_two <- lm(log(salary) ~ years + gamesyr + bavg + hrunsyr +
+                runsyr + fldperc + sbasesyr, data = mlb1)
+summary(mlb_two)
+#years, gamesyr, hrunsyr, runsyr are significant 
+
+#iii
+linearHypothesis(mlb_two, c("bavg=0", "fldperc=0", "sbasesyr=0"))
+#F is 0.685 - not significant 
+
+##### 4.17 #####
+
+#i
+wage <- lm(log(wage) ~ educ + exper + tenure, data = wage1)
+#H0: B2 = B3 
+
+#ii
+#a = B2 - B3 
+#B2 = a + B3 into equation to get 
+#y = B0 + B1x1 + ax2 + B3(x2+x3) + u 
+
+wage1 <- wage1 %>% mutate(exper_plus_tenure = exper + tenure)
+
+wage_two <- lm(log(wage) ~ educ + exper + exper_plus_tenure, data = wage1)
+summary(wage_two)
+#a is highly significant so we can reject H0.  
+
+#this is giving the wrong answer but cant work out why
+
+##### 4.18 #####
+
+#i
+phsrank <- 
+  data.frame( smallest =
+              min(twoyear$phsrank), 
+            largest = 
+              max(twoyear$phsrank),
+            average = 
+              mean(twoyear$phsrank))
+
+#ii
+colleges <- lm(log(lwage) ~ jc + totcoll + exper + phsrank, data = twoyear)
+summary(colleges)
+#phsrank is not s.s
+#10 pp of rank is + 0.14% wage 
+
+#iv
+#id is not important to wage. Should be randomly assigned 
+colleges_two <- lm(log(lwage) ~ jc + totcoll + exper + phsrank +id, data = twoyear)
+summary(colleges_two)
