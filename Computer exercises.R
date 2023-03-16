@@ -1,9 +1,9 @@
-install.packages("wooldridge")
 library(wooldridge)
 library(fixest)
 library(tidyverse)
 library(plotrix)
 library(car)
+library(lmtest)
 ###### Chapter 3 exercises ####### 
 
 ####3.13####
@@ -231,3 +231,31 @@ summary(colleges)
 #id is not important to wage. Should be randomly assigned 
 colleges_two <- lm(log(lwage) ~ jc + totcoll + exper + phsrank +id, data = twoyear)
 summary(colleges_two)
+
+#### 4.19 #####
+
+#i
+k401ksubs %>% filter(fsize== 1) %>% count()
+k401ksubs_singles <- k401ksubs %>% filter(fsize== 1)
+#ii 
+#estimating single person households only
+net_wealth <- lm(nettfa ~ inc + age, data = k401ksubs_singles)
+summary(net_wealth)
+#no slope estimate surprises 
+
+#iii 
+#intercep: someone with no income and no savings has -43$ in savings. 
+#this is not interesting 
+
+#iv
+coeftest(net_wealth, hypothesis = "age = 1", alternative = "less")
+#didnt get the right result - better to just do 0.84266-1/0.09202 
+
+#v 
+simple <- lm(nettfa ~ inc, data = k401ksubs_singles)
+summary(simple)
+#coeff is 0.8207 vs 0.79932 - not very different. Because correlation 
+#between age and inc is low 
+
+
+
