@@ -85,6 +85,32 @@ B2hat <- mlr$coefficients[[3]]
 
 B1hat + B2hat*deltahat == B1bar
 
+#### C7 #### 
+
+#i
+maths_scores <- lm((math10) ~ log(expend) + lnchprg, data = meap93)
+summary(maths_scores)
+#yes, signs coefficients are as expected 
+
+#ii
+#setting expenditure equals to zero doesn't make sense: min is 3332 in the sample
+
+#iii 
+maths_scores_two <- lm(math10 ~ log(expend), data = meap93)
+summary(maths_scores_two)
+#coefficient is now much larger. likely omitted variable bias
+
+#iv 
+cor(meap93$lexpend, meap93$lnchprg)
+#more expenditure correlayed with less poverty. Makes sense - richer schools in 
+#richer areas
+
+#v 
+#coeff on lnch is negative. Corr between lunch and expend is also negative. 
+#so, the biad in iii is positive, as expected 
+#failing to account for the poverty rate leads to an overestimate of the effect of spending.
+
+
 
 ########## Chapter 4 exercises ###########
 
@@ -256,6 +282,76 @@ simple <- lm(nettfa ~ inc, data = k401ksubs_singles)
 summary(simple)
 #coeff is 0.8207 vs 0.79932 - not very different. Because correlation 
 #between age and inc is low 
+
+####C9 (from 4th edition) ####
+
+#i
+price_discrim <- lm(log(psoda) ~ prpblck + log(income) + prppov, data = discrim)
+summary(price_discrim)
+#prpblck is significant at the 5% level, but not the 1% level
+
+#ii
+discrim_no_na <- discrim %>% drop_na()
+cor(log(discrim_no_na$income), discrim_no_na$prppov)
+#strongly correlated, indicating strong multicollinearlity 
+#all are significant above 
+
+#iii
+price_discrim_two <- lm(log(psoda) ~ prpblck + log(income) + prppov +
+                          log(hseval), data = discrim)
+summary(price_discrim_two)
+#this says that if median housing value rises by 10%, price of soda will increase 
+#by 1.2%
+#two sides p val is close to zero 
+
+#iv
+#log income change sign and becomes insignificant 
+#prppov becomes insiginficant 
+#high correlation between these and house price. Their effect is captured when we 
+#include house prices 
+
+linearHypothesis(price_discrim_two, c("prppov=0", "log(income)=0"))
+#jointly significant at the 5% level 
+
+#v
+#I think the final one. If we omit a significant variable (hseval), we will bias 
+#our estimates of other variables of interest. 
+#if prpblck increases by 1, then psode increases 9.7%
+
+
+#### C10 #####
+#i 
+benefits <- lm(lavgsal~ bs, data = elem94_95)
+summary(benefits)
+#estimated slope is different from zero 
+ans <- (-0.79512 +1) / 0.14965
+pt(ans, (1848 - 2))
+#reject at 10%, not 5% though
+
+#ii
+salary <- lm(lavgsal~ bs + lenrol + lstaff, data = elem94_95)
+summary(salary)
+#bs increases from -.79 to -.6, and remains highly significant 
+
+#iii
+#adding more terms increases standard error via multicolinariety 
+#but reduces it via reduced error variance. 
+#in this case, the second effect dominates 
+
+#iv
+#lstaff negative implies that if there are more staff then
+#salary is lower. This may be because staff are willing to take a pay cut to go 
+#to schools with more staff per pupils. 
+#coefficient is an elasticty: as lstaff increases 1%, salary drops 0.7%
+
+#v
+salary_two <- lm(lavgsal~ bs + lenrol + lstaff + lunch, data = elem94_95)
+summary(salary_two)
+#coeff on lunch is negative. The more disadvatanged children there are, the lower
+#the salary. This may be because these schools are in poorer areas
+
+
+
 
 
 
