@@ -351,7 +351,97 @@ summary(salary_two)
 #the salary. This may be because these schools are in poorer areas
 
 
+##### Chapter 7 Computer exercises #####
+#### C1 ####
+#i
+gpa <- lm(colGPA ~ PC + hsGPA + ACT + mothcoll + fathcoll, data = gpa1)
+summary(gpa)
+#t value for PC drops very slightly, and still significant 
+
+#ii
+linearHypothesis(gpa, c("mothcoll=0", "fathcoll=0"))
+#jointly insignificant so not surprising they dont change the other coeffs much 
+
+#iii
+gpa1 <- gpa1 %>% mutate(hsGPAsqr = hsGPA^2)
+gpa_two <- lm(colGPA ~ PC + hsGPA + ACT + mothcoll + fathcoll +hsGPAsqr , data = gpa1)
+summary(gpa_two)
+#just insiginficant 
+#adds a turning point to hsGPA 
+
+#iii
+
+#### C2 ####
+#i
+wge <- lm(log(wage) ~ educ + exper + tenure + married + black + south + urban, data = wage2)
+summary(wge)
+#salary different is 18% between black and non black, and is highly significant 
+
+#ii
+wage2 <- wage2 %>% mutate(expersqr = exper^2, tenuresqr = tenure^2)
+wge_2 <- lm(log(wage) ~ educ + exper + tenure + married + black + south + urban +
+            expersqr + tenuresqr, 
+          data = wage2)
+summary(wge_2)
+linearHypothesis(wge_2, c("expersqr = 0", "tenuresqr = 0"))
+
+#iii
+wge_3 <- lm(log(wage) ~ educ*black + exper + tenure + married + black + south + urban, data = wage2)
+summary(wge_3)
+#return to educ doesnt depend on race 
+#educ coeff now relates to non-black men 
+
+wge_4 <- lm(log(wage) ~ educ + exper + tenure + married + married:black + 
+              black + south + urban, data = wage2)
+summary(wge_4)
+#seem to be getting wrong coeff on interaction term for some reason 
+
+#### C3 ####
+#i
+baseball <- lm(log(salary) ~ years + gamesyr + bavg + hrunsyr + rbisyr + runsyr + 
+                 fldperc + allstar +frstbase + scndbase + thrdbase + shrtstop + 
+                 catcher, data = mlb1)
+#H0:  B13 = 0
+summary(baseball)
+#true at 10%. Estimated that catchers earn 100⋅[exp(.254) – 1] ≈ 28.9% more 
+
+#ii
+#H0: β9 =0, β10 =0,..., β13 =0
+linearHypothesis(baseball, c("frstbase = 0", "scndbase = 0", "thrdbase = 0",
+                            "shrtstop = 0", "catcher= 0"))
+#dont reject at 10% - theres no difference in salaries 
 
 
+#### C4 #### 
+
+grades <- lm(colgpa ~ hsize + I(hsize^2) + hsperc + sat + female + athlete,
+             data = gpa2)
+summary(grades)
+#ii
+#athlete raises colgpa by 0.17 and is highly sign
+
+#iii
+grades_two <- lm(colgpa ~ hsize + I(hsize^2) + hsperc + female + athlete,
+                 data = gpa2)
+summary(grades_two)
+#athlete is no longer significant 
+#this may be due to a bias is athlete and sat are negatively correlated, which they are 
+
+#yes: this happens because we do not control for SAT scores, and athletes score lower on average than nonathletes
+
+#iv
+gpa2$male <- (1- gpa2$female)
+gpa2$nonath <- (1-gpa2$athlete)
+grades_gendered <- lm(colgpa ~ hsize + I(hsize^2) + hsperc + sat + female:athlete + male:athlete +
+                        male:nonath, data = gpa2)
+summary(grades_gendered)
+#baseline is female non atheletes. female atlhese 
+
+#v
+grades_gendered_two <- lm(colgpa ~ hsize + I(hsize^2) + hsperc + sat + sat:female +
+                            female + athlete,
+                          data = gpa2)
+summary(grades_gendered_two)
+#no, sat:female is not significant 
 
 
