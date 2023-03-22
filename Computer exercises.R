@@ -444,4 +444,124 @@ grades_gendered_two <- lm(colgpa ~ hsize + I(hsize^2) + hsperc + sat + sat:femal
 summary(grades_gendered_two)
 #no, sat:female is not significant 
 
+#### C5 ####
+ceosal1 <- ceosal1 %>% mutate(rosneg = case_when(ros < 0 ~ 1,
+                                                 ros >= 0 ~ 0))
+salary <- lm(log(salary)~ log(sales) + roe + rosneg, data = ceosal1)
+summary(salary)
+
+#this says: 
+#a 1% increase in sales will increase expected salary by 29%
+#a one pp increase in roe will increase salary by 1.7%
+# if roe is negative, it will decrease salary by 23%
+#all significant 
+
+#### C6 ####
+#i
+sleep75_male <- sleep75 %>% filter(male == 1)
+sleep75_female <- sleep75 %>% filter(male == 0)
+sleep_male <- lm(sleep ~ totwrk + educ + age + I(age^2) + yngkid, data = sleep75_male)
+sleep_female <- lm(sleep ~ totwrk + educ + age + I(age^2) + yngkid, data = sleep75_female)
+
+summary(sleep_male)
+summary(sleep_female)
+#education is not significant in female 
+#young child means less sleep for women and more for men 
+#quadratic diff shape 
+
+#practically important differences in estimates for women and men 
+#do not translate into statistically significant differences. 
+#We need a larger sample size to confidently determine whether there are differences in slopes.
+
+#ii 
+sleep_test <- lm(sleep ~ totwrk + totwrk:male + educ + educ:male +
+                   age + age:male + I(age^2) + I(age^2):male + yngkid +
+                   yngkid:male, data = sleep75)
+linearHypothesis(sleep_test, c("totwrk:male = 0",
+                                "male:educ = 0",
+                                "male:age = 0",
+                                "male:I(age^2) = 0",
+                                "male:yngkid = 0"))
+#rejected at 5% - there are differences in slope between male and female 
+#df = n-2(k+1) df = 706- 11 = 694 DF
+
+#iii
+
+sleep_test_two <- lm(sleep ~ male + totwrk + totwrk:male + educ + educ:male +
+                   age + age:male + I(age^2) + I(age^2):male + yngkid +
+                   yngkid:male, data = sleep75)
+
+linearHypothesis(sleep_test_two, c("male:totwrk = 0",
+                               "male:educ = 0",
+                               "male:age = 0",
+                               "male:I(age^2) = 0",
+                               "male:yngkid = 0"))
+#no longer significant 
+#when we allow for differneces in intercept, the slope is no longer different 
+
+#iv 
+#final model would be with all the variables and an intercept for male 
+
+
+#### C7 ####
+#wage for men when educ = 12.5: 
+male_wage <-0.389 + 0.082*12.5
+#wage for wome when educ = 12.5n
+female_wage <- 0.389 - 0.227 + 0.082*12.5 - 0.0056*12.5
+male_wage - female_wage
+
+#wage for men when educ = 0: 
+male_wage_two <-0.389
+female_wage_two <- 0.389 - 0.227 
+male_wage_two - female_wage_two
+#educ impacts by 7pp 
+
+#I'm not sure if 'male wage' is accurate... educ isnt interacted by male, so I think
+#the educ coefficient is irrespective of gender
+
+#ii
+wage1 <- wage1 %>% mutate(new_educ = educ -12.5)
+wage <- lm(log(wage) ~ female + educ + female:new_educ + exper + I(exper^2) +
+             tenure + I(tenure^2), data = wage1)
+summary(wage)
+#coeff on female is the wage diff at 12.5 years of education 
+
+#iii
+#the coeff on female is highly ss. The coeff in 7.18 is not
+#this one is stronger as gives a much more realistic interpretation 
+
+
+#### C8 ####
+#i 
+#B1 would equal be greater than zero 
+
+#ii
+
+white <- lm(approve ~ white, data = loanapp)
+summary(white)
+#ss and says whites have a 20% better chance of approval - deffo significant 
+
+#iii
+
+lpm <- lm(approve ~ hrat + obrat + loanprc + unem +male + married + dep + sch +
+            cosign + chist + pubrec + mortlat1 + mortlat2 + vr + white, data = loanapp )
+summary(lpm)
+#white still very sign but impact has decreased 
+
+#iv 
+
+lpm_two <- lm(approve ~ hrat + obrat + obrat:white +loanprc + unem +male + married + dep + sch +
+            cosign + chist + pubrec + mortlat1 + mortlat2 + vr + white, data = loanapp )
+summary(lpm_two)
+#yes, significant at 5% 
+
+#v 
+loanapp <- loanapp %>% mutate(obrat_av = obrat -32)
+lpm_three <- lm(approve ~ hrat + obrat + obrat_av:white +loanprc + unem +male + married + dep + sch +
+                cosign + chist + pubrec + mortlat1 + mortlat2 + vr + white, data = loanapp )
+summary(lpm_three)
+
+#coeff on white is now the race differential when obrat = 32 
+#11.3% more likely to get a loan 
+# the 95% confidence interval is about .113 ± 1.96(.020) and doesnt include zero 
 
