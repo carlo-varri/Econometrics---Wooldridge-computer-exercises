@@ -4,6 +4,8 @@ library(tidyverse)
 library(plotrix)
 library(car)
 library(lmtest)
+library(huxtable)
+
 ###### Chapter 3 exercises ####### 
 
 ####3.13####
@@ -565,3 +567,110 @@ summary(lpm_three)
 #11.3% more likely to get a loan 
 # the 95% confidence interval is about .113 ± 1.96(.020) and doesnt include zero 
 
+#### C9 ####
+#i 
+eligible <- k401ksubs %>% filter(e401k == 1) %>% count()
+eligible/count(k401ksubs)
+#39%
+
+#ii
+lpm <- lm(e401k ~ male + inc + I(inc^2) + age + I(age^2), data = k401ksubs)
+summary(lpm)
+
+#iii
+#no, not independent of income or age 
+#eligibility prob increases with income The quadratic is n shaped, i.e. has a maximum
+#turning point 
+#Same story for age - prob of eligibility rises and then falls in age 
+#gender is not significant 
+
+#iv
+lpm$fitted.values 
+#can see there are zero fitted values greater than one, or negative
+sum(lpm$fitted.values < 0 | lpm$fitted.values > 1)
+
+#v
+k401_fitted_vals <- data.frame(fitted_vals = lpm$fitted.values) %>% 
+  mutate(rounded_vals = case_when(fitted_vals >= 0.5 ~ 1,
+                                            fitted_vals < 0.5 ~ 0))
+
+k401_fitted_vals %>% count(rounded_vals==1)
+
+#vi
+k401ksubs <- k401ksubs %>% mutate(fitted_vals = k401_fitted_vals$fitted_vals,
+                                  eligibil_predics = k401_fitted_vals$rounded_vals)
+
+k401ksubs <- k401ksubs %>% mutate(comparison = e401k - eligibil_predics)
+k401ksubs_not_elig <- k401ksubs %>% filter(e401k == 0) 
+k401ksubs_not_elig %>% filter(comparison==0) %>% count / count(k401ksubs_not_elig)
+#82% are correctly predicted
+
+k401ksubs_elig <- k401ksubs %>% filter(e401k == 1) 
+k401ksubs_elig %>% filter(comparison==0) %>% count / count(k401ksubs_elig)
+#39% are correctly predicted 
+
+#vii
+#no. The model is skewed towards saying people aren't eligible
+
+#viii
+lpm_two <- lm(e401k ~ male + inc + I(inc^2) + age + I(age^2) + pira, data = k401ksubs)
+summary(lpm_two)
+#not significant 
+
+#### C10 ####
+#i
+basketball <- lm(points ~ guard + forward + exper + I(exper^2), data = nbasal)
+summary(basketball)
+
+#ii 
+#dont include all three positions as that would induce perfect multicollinearity
+#(these are all the possible positions, so a + b + c =1)
+#this is the dummy variable trap 
+
+#iii 
+#yes, a guard scores more than a center. THe score 2.3 more points/game, and this is 
+#highly significant 
+
+#iv 
+basketball_two <- lm(points ~ guard + forward + exper + I(exper^2) + marr, data = nbasal)
+summary(basketball_two)
+#not significant 
+
+#v
+basketball_three <- lm(points ~ guard + forward + exper + I(exper^2) + marr +
+                       marr:exper + marr:I(exper^2), data = nbasal)
+summary(basketball_three)
+linearHypothesis(basketball_three, c("marr = 0","exper:marr = 0", "I(exper^2):marr = 0"))
+#marriage not significant
+
+#vi 
+basketball_four <- lm(assists ~ guard + forward + exper + I(exper^2) + marr, data = nbasal)
+summary(basketball_four)
+#exper is much less important 
+huxreg(basketball_two, basketball_four)
+
+#### C11 ####
+#i
+data.frame(average = mean(k401ksubs$nettfa),
+           stand_dev = sd(k401ksubs$nettfa),
+           min = min(k401ksubs$nettfa),
+           max = max(k401ksubs$nettfa))
+
+#ii
+net <- lm(nettfa ~ e401k, data = k401ksubs)
+summary(net)
+#e401k means more predicted net financial assets (18.9k)
+
+#iii
+net_two <- lm(nettfa ~ e401k + inc + age + I(inc^2) + I(age^2), data = k401ksubs)
+summary(net_two)
+#predicts 9.7k more assets, highly significant 
+
+#iv
+k401ksubs_avage <- k401ksubs %>% mutate(avage = (age - 41))
+net_three <- lm(nettfa ~ e401k + inc + age + I(inc^2) + I(age^2) +
+                e401k:(avage) + e401k:I(avage^2), data = k401ksubs_avage)
+summary(net_three)
+
+
+#e401k:avage is significant 
