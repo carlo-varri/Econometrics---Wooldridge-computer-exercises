@@ -674,3 +674,222 @@ summary(net_three)
 
 
 #e401k:avage is significant 
+
+
+
+#### Chapter 8 questions ####
+####C1####
+#i
+#Var(u|male) = B0 +B1male, where female variance is B0
+
+#ii
+sleep <- lm(sleep~ totwrk + educ + age + I(age^2) + yngkid + male, data = sleep75)
+residuals_sleep <- resid(sleep)^2
+variance_test <- lm(residuals_sleep ~ male,data = sleep75)
+summary(variance_test)
+
+#ii
+#no, the variance of not statistically significantly differnet between men and 
+#women 
+
+#### C2 ####
+#i
+price <- feols(price ~ lotsize + sqrft +bdrms, data = hprice1, vcov = "hetero")
+summary(price)
+#lotsize is no longer ss
+
+#ii
+logprice <- feols(log(price) ~ log(lotsize) + log(sqrft) +bdrms, data = hprice1, vcov = "hetero")
+summary(logprice)
+
+#iii
+#using log of dependant variable can remove heteroskedacity 
+
+#### C3 ####
+#skipped - I dont think applying the full white test is worth the time 
+
+#### C4 ####
+
+#i
+voteA <- feols(voteA ~ prtystrA + democA + log(expendA)+ log(expendB), data = vote1)
+residuals <- resid(voteA)^2
+hetero_test <- lm(residuals~ prtystrA + democA + log(expendA)+ log(expendB), data = vote1)
+summary(hetero_test)
+#R^2 = 0.03 as there is weak evidence of heterok=skadacity in 2 variables
+# Remember, this is how OLS works: the estimates β are chosen to make the residuals be
+#uncorrelated in the sample with each independent variable (as well as have zero sample average).
+
+#ii
+
+BP_test <- linearHypothesis(hetero_test, c("prtystrA = 0", "democA = 0", "log(expendA) = 0",
+                                     "log(expendB) = 0"))
+BP_test
+#there is some evidence of heteroskadacity, but not significant at 5%
+
+#iii
+#using the special case of the white test (using fitted values)
+fitted_vals <- voteA$fitted.values
+fitted_vals_sqrd <- voteA$fitted.values^2
+
+white_test <- lm(residuals~ fitted_vals + fitted_vals_sqrd)
+linearHypothesis(white_test, c("fitted_vals = 0", "fitted_vals_sqrd = 0"))
+#slighly less evidence of heteroskadacity now 
+
+#### C5 ####
+#i
+selected <- lm(sprdcvr ~ 1, data = pntsprd)
+summary(selected)
+(0.51537  - 0.5)/0.02127
+#0.72 is not significant at the 5%
+
+#ii
+pntsprd %>% filter(neutral == 1) %>% count
+#35
+
+#iii
+spread_ols <- feols(sprdcvr~ favhome + neutral + fav25 + und25, data = pntsprd)
+spread_robust <- feols(sprdcvr~ favhome + neutral + fav25 + und25, data = pntsprd, 
+                       vcov = "hetero")
+etable(spread_ols, spread_robust)
+#neutral is most significant 
+
+#iv 
+#if all coefficients are zero, this means they do not effect the dependent variable.
+#hence they do not belong in the population model. So the mean nor the variance of the 
+#dependant vaeriable depends on the independant variables 
+
+#v
+linearHypothesis(spread_ols, c("favhome = 0", "neutral = 0", "fav25 = 0", "und25 = 0"))
+#cant reject the null - they are jointly insignificant so there should be no heteroskedacity 
+#testing with a BP test 
+
+residuals_sqrd <- resid(spread_ols)^2
+
+BP_test <- lm(residuals_sqrd ~ favhome + neutral + fav25 + und25, data = pntsprd)
+linearHypothesis(BP_test, c("favhome = 0", "neutral = 0", "fav25 = 0", "und25 = 0"))
+#there is evidence of heteroskaacity here ???
+
+#v 
+#no, jointly insignificant and explanatory power is very low 
+
+#### C6 ####
+#i
+crime <- lm(narr86 ~ pcnv + avgsen + tottime + ptime86 + qemp86, data = crime1)
+summary(crime)
+range(crime$fitted.values)
+
+#ii
+fitted_vals <- crime$fitted.values 
+crime1 <- crime1 %>% mutate(est_variance = fitted_vals*(1-fitted_vals),
+                            multiplier = 1/est_variance, 
+                            weighted_pcnv = pcnv*multiplier)
+h <- fitted_vals*(1-fitted_vals)
+weights <- 1/h
+
+WeLeSq <- lm(narr86 ~ pcnv + avgsen + tottime + ptime86 + qemp86, data = crime1,
+          weights = weights)
+summary(WeLeSq)
+
+#iii
+
+
+#### C7 ####
+#i
+approve <- feols(approve ~ white + hrat + obrat + loanprc + unem + male + married + 
+                   dep + sch + cosign + chist + pubrec + mortlat1 + mortlat2 + vr,
+                 data = loanapp, vcov = "hetero")
+approve_OLS <- feols(approve ~ white + hrat + obrat + loanprc + unem + male + married + 
+                   dep + sch + cosign + chist + pubrec + mortlat1 + mortlat2 + vr,
+                 data = loanapp)
+etable(approve, approve_OLS)
+
+tibble(robust_upper_int = 0.1288 + 1.96* 0.0259,
+           robust_lower_int = 0.1288 - 1.96* 0.0259,
+           OLS_upper_int = 0.1288 + 1.96* 0.0197,
+           OLS_lower_int = 0.1288 - 1.96* 0.019)
+#ii
+range(approve_OLS$fitted.values)
+#some are more than one. So would have to manipluate to ensure all are between zero 
+#and one before using WLS (hi cannot be negative)
+
+#### C8 ####
+#i
+#ols regression 
+colgpa <- lm(colGPA ~ hsGPA +ACT + skipped + PC, data = gpa1)
+summary(colgpa)
+resid(colgpa)
+
+#ii
+#testing for hetrosk by regressing residuals on fitted and fitted squared (white test)
+fitted <- colgpa$fitted.values
+fitted_sqrd <- colgpa$fitted.values^2
+resid_squared <- resid(colgpa)^2
+white_test <- lm(resid_squared ~ fitted + fitted_sqrd)
+linearHypothesis(white_test, c("fitted = 0", "fitted_sqrd = 0"))
+#there is evidence of heteroskedacity 
+
+#iii
+#resolving heteroskedacity using weighted least squares. Making sure all fitted vals 
+#are positive before using as weights 
+min(white_test$fitted.values)
+wghts <- 1/(white_test$fitted.values)
+
+WLS <- lm(colGPA ~ hsGPA +ACT + skipped + PC, data = gpa1,
+          weights = wghts)
+summary(WLS)
+
+#estimates of skipped and PC are very similar to OLS estimates, and both significant 
+#in both cases 
+
+#iv
+#resolving heterosked with robust SEs 
+WLS_robust <- feols(colGPA ~ hsGPA +ACT + skipped + PC, data = gpa1,
+          weights = wghts, vcov = "hetero")
+summary(WLS_robust)
+
+#SE very similar when using robust SE vs when using weights. All same variables are
+#still significant 
+
+#### C9 ####
+#i
+cigs <- lm(cigs~ log(income) + log(cigpric) + educ + age + I(age^2) + restaurn, 
+              data = smoke)
+summary(cigs)
+
+#ii
+#first set in forming WLS is regressing logs of the squared residuals on the independent 
+#variables
+resid_cigs_sqrd <- resid(cigs)^2
+WLS_regression_one <- lm(log(resid_cigs_sqrd) ~ log(income) + log(cigpric) + educ + age +
+                     I(age^2) + restaurn, data = smoke)
+
+summary(WLS_regression_one)
+
+#then use the fitted values from this as weights in the original regression 
+weights <- 1/exp(fitted.values(WLS_regression_one))
+
+WLS_regression_two <- feols(cigs~ log(income) + log(cigpric) + educ + age + I(age^2) + restaurn, 
+                         data = smoke, weights = weights)
+summary(WLS_regression_two)
+
+unweighted_residuals <- resid(WLS_regression_two)
+unweighted_fitted <- fitted.values(WLS_regression_two)
+
+#iii
+weighted_residuals <- (unweighted_residuals/ sqrt(weights))^2
+weighted_fitted <- unweighted_fitted/ sqrt(weights)
+
+white_test <- lm(weighted_residuals ~ weighted_fitted + I(weighted_fitted^2))
+summary(white_test)
+linearHypothesis(white_test, c("weighted_fitted = 0", "I(weighted_fitted^2) = 0"))
+#evidence of heteroskedacity in the weighted equation 
+
+#iv 
+#the weighting didnt remove the heteroskedactiy. So our WLS was misspecified 
+
+#v 
+WLS_robust <- feols(cigs~ log(income) + log(cigpric) + educ + age + I(age^2) + restaurn, 
+                            data = smoke, weights = weights, vcov = "hetero")
+summary(WLS_robust)
+#see large differences in SE between this and WLS_regression_two, showing that weighting 
+#didnt do the trick. Except restaurn all other SEs are alot bigger 
