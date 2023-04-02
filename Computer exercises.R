@@ -893,3 +893,39 @@ WLS_robust <- feols(cigs~ log(income) + log(cigpric) + educ + age + I(age^2) + r
 summary(WLS_robust)
 #see large differences in SE between this and WLS_regression_two, showing that weighting 
 #didnt do the trick. Except restaurn all other SEs are alot bigger 
+
+#### C10 ####
+#i
+OLS_401 <- feols(e401k ~ inc + I(inc^2) + age + I(age^2) + male, data = k401ksubs)
+robust_401 <- feols(e401k ~ inc + I(inc^2) + age + I(age^2) + male, data = k401ksubs,
+                    vcov = "hetero")
+etable(OLS_401, robust_401)
+#no important differences 
+
+#ii
+#expand out the condiitonal variance (where E(u^2| x) is conditional variance) and 
+#see the coefficients are 0, 1 and -1. 
+
+#iii
+#performing white test for heteroskedacity
+#first, regressing the errors squared on the fitted vals and fitted vals sqrd
+#either OLS or robust; they are identical in fitted vals and residuals 
+
+residuals_sqrd <- resid(OLS_401)^2
+fitted_vals <- fitted.values(OLS_401)
+fitted_vals_sqrd <- fitted.values(OLS_401)^2
+
+resid_on_fitted <- lm(residuals_sqrd ~ fitted_vals + fitted_vals_sqrd)
+summary(resid_on_fitted)
+#coefficients are more or less as predicted  
+
+#iv
+#ensuring fitted vals are all between zero and one 
+range(fitted_vals)
+#now using 1/(yhat(1 - yhat)) as weights 
+weights <- 1/(fitted_vals*(1-fitted_vals))
+
+weighted_OLS <- feols(e401k ~ inc + I(inc^2) + age + I(age^2) + male, 
+                                 data = k401ksubs, weights = weights)
+etable(weighted_OLS, OLS_401)
+#no important differences 
