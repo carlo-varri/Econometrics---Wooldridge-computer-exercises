@@ -929,3 +929,117 @@ weighted_OLS <- feols(e401k ~ inc + I(inc^2) + age + I(age^2) + male,
                                  data = k401ksubs, weights = weights)
 etable(weighted_OLS, OLS_401)
 #no important differences 
+
+
+#### Chapter 13 ####
+#C1 
+#i
+wage <- feols(kids~ educ + age + I(age^2) + black + east + northcen + west + 
+                farm + othrural + town + smcity + y74 + y76 + y78 + y80 + y82 + y84,
+              data = fertil1)
+linearHypothesis(wage, c("farm = 0", "othrural = 0", "town = 0", "smcity = 0"), 
+                 test = "F")
+
+#ii
+linearHypothesis(wage, c("east = 0", "northcen = 0", "west = 0"), 
+                 test = "F")
+#iii
+residuals_sqrd <- resid(wage)^2
+#regressing resid squard on years 
+resid_on_years <- lm(residuals_sqrd ~ y74 + y76 + y78 + y80 + y82 + y84, data = fertil1)
+#F test on regressors 
+linearHypothesis(resid_on_years, c("y74 = 0", "y76 = 0", "y78 = 0", "y80 = 0", 
+                                   "y82 = 0", "y84 = 0"))
+#yes, evidence of heteroskedacity - we ought to compute robust statistics 
+
+#iv 
+with_interactions <- feols(kids~ educ + age + I(age^2) + black + east + northcen + west + 
+                             farm + othrural + town + smcity + y74 + y76 + y78 + y80 + y82 + y84+ 
+                             y74:educ + y76:educ + y78:educ + y80:educ + y82:educ + y84:educ ,
+                           data = fertil1)
+summary(with_interactions)
+#these terms represent the impact of education of feritility changing over years 
+
+linearHypothesis(with_interactions, c("educ:y74 = 0", "educ:y76 = 0", "educ:y78 = 0", 
+                                   "educ:y80 = 0","educ:y82 = 0", "educ:y84 = 0"))
+#they're not jointly significant because we're testing insignificant realtionships 
+#with significant ones 
+
+#### C2 ####
+#i
+#its return to education for a male with no education - the impact of gender and 
+#education is captured elsewhere in the equation 
+
+#ii
+#to find % increase for a male with 12 years of education, we replace y85:educ 
+#with y85:(educ-12) (centering)
+
+cps78_85 <- cps78_85 %>% mutate(educ_centered = educ-12)
+twelve_educ <- lm(lwage ~ y85 + educ + y85:educ_centered + exper + I(exper^2) + union + female + 
+                    y85:female, data = cps78_85)
+summary(twelve_educ)
+#see the coefficient on the intercept as the impact on wage of 12 years of education
+#its about 33.9% here with se of 0.034
+#95% CI is given by  33.9 ± 1.96(3.4)
+
+
+#iii
+cps78_85 <- cps78_85 %>% mutate(wage = exp(lwage),
+                                rwage = wage/1.65,
+                                lrwage = log(rwage))
+rwage <- lm(lrwage ~ y85 + educ + y85:educ + exper + I(exper^2) + union + female + 
+                             y85:female, data = cps78_85)
+summary(rwage)
+
+#iv
+#total sum of squares different 
+
+#v
+#union particip 1978 
+cps78_85 %>% filter(year == 78, union == 1) %>% count()
+168/cps78_85 %>% filter(year == 78) %>%  count()
+#30.5%
+
+#union particip 1985
+cps78_85 %>% filter(year == 85, union == 1) %>% count()
+96/cps78_85 %>% filter(year == 85) %>%  count()
+#18%
+
+#vi 
+union <- lm(lwage ~ y85 + educ + y85:educ + exper + I(exper^2) + union +
+         union:y85 + female + y85:female, data = cps78_85)
+summary(union)
+#in 78, union meant 20% higher wage
+#in 85, it meant 0.39% less wage - not significant though
+#the effect of being in a union didnt change between years - its about 20% in both years 
+
+#vii 
+#no, could have lower participation but wage differential not changing over time 
+#perhaps if the union bargained for multiple years when it had more power 
+
+#### C3 ####
+#i
+#the sign would be positive 
+#if B1 is positive, then the inicinerator was built in an area of lower home vals 
+#anyway 
+
+#ii
+price <- lm(log(price) ~ y81+ log(dist) + y81:log(dist), data = kielmc)
+summary(price)
+#the incinerator being built had no impact on the price of houses
+
+#iii
+
+price_two <- lm(log(price) ~ y81+ log(dist) + y81:log(dist) +
+                  age + I(age^2) + rooms + baths + lintst + lland + larea, data = kielmc)
+summary(price_two)
+#still no impact of the incinerator 
+
+#iii
+#it was not the distance per se but the characteristics of the houses that was 
+#driving the price change as distance increased 
+
+#### C4 ####
+
+
+
