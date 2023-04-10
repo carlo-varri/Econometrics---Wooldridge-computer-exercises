@@ -1039,7 +1039,57 @@ summary(price_two)
 #it was not the distance per se but the characteristics of the houses that was 
 #driving the price change as distance increased 
 
+
 #### C4 ####
+#i
+duration <- lm(log(durat)~ afchnge + highearn + afchnge:highearn +
+                 male + married + head + neck + upextr + trunk + 
+                 lowback + lowextr + occdis + manuf + construc, data = injury)
+summary(duration)
+#interaction term becomes more significant. A strong response in high earners following 
+#the change in rules 
+
+#ii
+#The R^2 is low, indicating poor predictive power of the duration. But the estimates
+#are by no means useless 
+
+#iii
+injury_mi <- injury %>% filter(mi == 1)
+
+duration_mi <- lm(log(durat)~ afchnge + highearn + afchnge:highearn, 
+                  data = injury_mi)
+summary(duration_mi)
+#michigan estimate on the interaction term is very similar, however not ss due to 
+#large SE, due to the smaller sample size 
 
 
+#### C5 ####
+
+#i
+rent <- lm(log(rent)~ y90 + log(pop)+ log(avginc) + pctstu, data = rental)
+summary(rent)
+#90 variable shows that rents are just higher in 1990, irrespective of income and 
+#student concentration 
+#in terms of pctstu, if the student % rises 10%, the rents rise by 5%. very ss. 
+
+#ii
+#test for hetero: 
+residuals_sqrd <- resid(rent)^2
+
+hetero_test_one <- lm(residuals_sqrd ~ y90 + log(pop)+ log(avginc) + pctstu, data = rental)
+linearHypothesis(hetero_test_one, c("y90 = 0", "log(pop) = 0", "log(avginc) = 0",
+                                    "pctstu = 0"))
+#evidence of heteroskedacticy - so the se are not valid 
+
+#didnt need to do this - if ai is in the error, then ommited variable bias if the 
+#fixd effect is correlated with any explanatory variables 
+
+#iii
+rental_fd <- rental %>% mutate(pop_lag = log(pop) - log(lag(pop)),
+                               avginc_lag = log(avginc) - log(lag(avginc)),
+                               pctstu_lag = pctstu - lag(pctstu),
+                               rent_lag = log(rent) - log(lag(rent)))
+
+rent_fd = lm(rent_lag~ pop_lag+ avginc_lag + pctstu_lag, data = rental_fd)
+summary(rent_fd)
 
