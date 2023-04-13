@@ -1092,4 +1092,72 @@ rental_fd <- rental %>% mutate(pop_lag = log(pop) - log(lag(pop)),
 
 rent_fd = lm(rent_lag~ pop_lag+ avginc_lag + pctstu_lag, data = rental_fd)
 summary(rent_fd)
+#this is giving the wrong results but I cant work out why 
+
+#### C6 ####
+#i
+crime3_fd <- crime3 %>% group_by(district) %>%  
+  mutate(lcrime_fd = lcrime - lag(lcrime),
+                               d78_fd = d78 - lag(d78),
+                               clrprc1_fd = clrprc1 - lag(clrprc1),
+                               clrprc2_fd = clrprc2 - lag(clrprc2),
+                               avg_clr_fd = avgclr - lag(avgclr))
+
+crime <- lm(lcrime_fd~ d78_fd + clrprc1_fd + I(clrprc2_fd+clrprc1_fd), data = crime3_fd)
+summary(crime)
+#as clrprc1 is not ss from zero, we cannot reject B1 = B2 
+
+#iii
+crime_adjusted <- lm(lcrime_fd ~ avg_clr_fd, data = crime3_fd)
+summary(crime_adjusted)
+#again, not getting correct estimate from this- fixed this - I needed to group 
+#by district 
+
+
+#### C7 ####
+#i
+gpa <- lm(trmgpa ~ spring + sat+ hsperc+ female+ black + white+ frstsem+
+            tothrs+ crsgpa +  season, data = gpa3)
+
+summary(gpa)
+#season is not significant. Indicates sport season - after controlling for these 
+#variables, the sport being in season doesnt make a difference 
+
+#ii
+#there will be omitted variable bias. Ability and season will be correlated
+
+#iii 
+#static variables will drop out; sat, female, hsperc, black, white
+gpa3_fd <- gpa3 %>% mutate(ID = rep(1:(nrow(gpa3)/2), each = 2))
+gpa3_fd<- gpa3_fd %>% group_by(ID) %>%  
+                            mutate(spring_fd = spring - lag(spring),
+                             frstsem_fd = frstsem - lag(frstsem),
+                             tothrs_fd = tothrs - lag(tothrs),
+                             crsgpa_fd = crsgpa - lag(crsgpa),
+                             season_fd = season - lag(season),
+                             trmgpa = trmgpa - lag(trmgpa)
+                             )
+gpa_fd <- lm(trmgpa ~ frstsem_fd + tothrs_fd+ crsgpa_fd + season_fd,
+             data = gpa3_fd)
+summary(gpa_fd)
+#season is still not significant, but the effect has become larger 
+
+#iv 
+#anything that might affect grade that could change between a term
+ #relationship for exampple, or course load 
+
+#### C8 ####
+#i 
+vote2 <- vote2 %>% 
+  mutate(inc_share_fd = incshr90 - incshr88,
+         linexp_fd = linexp90 - linexp88,
+         lchexp_fd = lchexp90 - lchexp88,
+         vote_fd = vote90 - vote88)
+         
+                          
+
+vote <- lm(vote_fd~ linexp_fd +lchexp_fd +  inc_share_fd, data = vote2)
+summary(vote)
+#only inc_share_fd is significant 
+
 
