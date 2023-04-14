@@ -1160,4 +1160,102 @@ vote <- lm(vote_fd~ linexp_fd +lchexp_fd +  inc_share_fd, data = vote2)
 summary(vote)
 #only inc_share_fd is significant 
 
+#ii 
+linearHypothesis(vote, c("linexp_fd = 0", "lchexp_fd=0"))
+#not jointly significant even at 20%
+
+#iii
+vote_simple <- lm(vote_fd~ inc_share_fd, data = vote2)
+summary(vote_simple) 
+huxreg(vote, vote_simple)
+#inc share now significiant at 1%
+#if the change in spending cahanges 10pp, the vote share is predicted to increase
+#by 2.2% (the coeff shows impact of 1pp change)
+
+#iv 
+vote2 <- vote2 %>% filter(rptchall == 1)
+vote_rptchall <- lm(vote_fd~ inc_share_fd, data = vote2)
+summary(vote_rptchall)
+#now, once we control for repeat challenger, inc share is not significant at any 
+#sensible level 
+
+#### C9 ####
+#i
+crime4 <- crime4 %>% group_by(county) %>% 
+                       mutate(lwcon_fd = lwcon - lag(lwcon),
+                            lwtuc_fd = lwtuc - lag(lwtuc),
+                            lwtrd_fd = lwtrd - lag(lwtrd),
+                            lwfir_fd = lwfir - lag(lwfir),
+                            lwser_fd = lwser - lag(lwser),
+                            lwmfg_fd = lwmfg - log(lwmfg),
+                            lwfed_fd = lwfed - lag(lwfed),
+                            lwsta_fd = lwsta - lag(lwsta),
+                            lwloc_fd = lwloc - lag(lwloc),
+                            lprbarr_fd = lprbarr - lag(lprbarr),
+                            lprbconv_fd = lprbconv - lag(lprbconv),
+                            lprbpris_fd = lprbpris - lag(lprbpris),
+                            lavgsen_fd = lavgsen - lag(lavgsen),
+                            lpolpc_fd = lpolpc - lag(lpolpc),
+                            lcrmrte_fd = lcrmrte - lag(lcrmrte),
+                            d83_fd = d83 - lag(d83),
+                            d84_fd = d84 - lag(d84),
+                            d85_fd = d85 - lag(d85),
+                            d86_fd = d86 - lag(d86),
+                            d87_fd = d87 - lag(d87))
+
+crime_fd <- lm(lcrmrte_fd ~ 
+                 d83_fd +d84_fd + d85_fd + d86_fd +d87_fd + 
+                 lpolpc_fd + lavgsen_fd + lprbpris_fd + lprbconv_fd + lprbarr_fd +
+                 lwloc_fd + lwsta_fd + lwfed_fd + lwmfg_fd + lwser_fd + 
+                 lwfir_fd + lwtrd_fd + lwtuc_fd + lwcon_fd, data = crime4)
+summary(crime_fd)
+
+#ii
+#signs on wages differ. Would expect that crime rate would fall as wages rise, 
+# so signs are expected to be negative. 
+#F test on wages is not s.s. 
+
+#### C10 ####
+
+#i
+jtrain <- jtrain %>% group_by(fcode) %>% 
+  mutate(d88_fd = d88 - lag(d88),
+         d89_fd = d89 - lag(d89),
+         grant_fd = grant - lag(grant),
+         lagged_grant_fd = grant_1 - lag(grant_1),
+         lemploy_fd = lemploy - lag(lemploy),
+         hrsemp_fd = hrsemp - lag(hrsemp))
+
+training <- lm(hrsemp_fd ~
+                 d89_fd + grant_fd + lagged_grant_fd + lemploy_fd +
+                 hrsemp_fd, data = jtrain)
+summary(training)
+length(training$residuals)
+#running with both d88_fd and d89_fd produces errors as then we have a control for 
+#1987 - 1988 and 1988 - 1989 grant - leaving one out to be represented by the 
+#intercept
+
+#there are 157 firms in all. If we had data on both 1987 - 1988 and 1988 - 1989 
+#grant status for each, we would have 314 observations 
+
+#ii
+#grant says that training hours a grant means that the grant means on average 
+# a firm with a grant spent 32.6 more hours training per employee.
+#it is significant at the 1% level 
+
+#iii 
+#last years grant has no impact on this years training. 
+#yes, that is surprising. They obviously spent it all in the first year
+
+#iv 
+#large firms do train employees more. 
+#a 10 pp change in firm size means that training time increases by 0.07hrs per employee
+#this is a small effect and its not significant 
+
+
+
+
+
+
+
 
