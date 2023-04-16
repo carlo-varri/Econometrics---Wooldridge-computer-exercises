@@ -5,6 +5,7 @@ library(plotrix)
 library(car)
 library(lmtest)
 library(huxtable)
+library(AER)
 
 ###### Chapter 3 exercises ####### 
 
@@ -1135,10 +1136,11 @@ gpa3_fd<- gpa3_fd %>% group_by(ID) %>%
                              tothrs_fd = tothrs - lag(tothrs),
                              crsgpa_fd = crsgpa - lag(crsgpa),
                              season_fd = season - lag(season),
-                             trmgpa = trmgpa - lag(trmgpa)
+                             trmgpa_fd = trmgpa - lag(trmgpa)
                              )
-gpa_fd <- lm(trmgpa ~ frstsem_fd + tothrs_fd+ crsgpa_fd + season_fd,
+gpa_fd <- lm(trmgpa_fd ~ frstsem_fd + tothrs_fd+ crsgpa_fd + season_fd,
              data = gpa3_fd)
+
 summary(gpa_fd)
 #season is still not significant, but the effect has become larger 
 
@@ -1208,6 +1210,7 @@ crime_fd <- lm(lcrmrte_fd ~
                  lpolpc_fd + lavgsen_fd + lprbpris_fd + lprbconv_fd + lprbarr_fd +
                  lwloc_fd + lwsta_fd + lwfed_fd + lwmfg_fd + lwser_fd + 
                  lwfir_fd + lwtrd_fd + lwtuc_fd + lwcon_fd, data = crime4)
+
 summary(crime_fd)
 
 #ii
@@ -1252,7 +1255,58 @@ length(training$residuals)
 #a 10 pp change in firm size means that training time increases by 0.07hrs per employee
 #this is a small effect and its not significant 
 
+#### C11 ####
+#i
 
+#change math4 = B1*change(lrexpp). change(math)/ 100 = B1/100*100*change(lrexpp) 
+#which equals B1/100 * %_change(lrexpp) 
+#so if %change is 10, the change in math 4 is 100 
+
+
+#ii 
+mathpnl <- mathpnl %>% group_by(distid) %>% mutate(math4_fd = math4 - lag(math4),
+                              y94_fd = y94 - lag(y94),
+                              y95_fd = y95 - lag(y95),
+                              y96_fd = y96 - lag(y96),
+                              y97_fd = y97 - lag(y97),
+                              y98_fd = y98 - lag(y98),
+                              lrexpp_fd = lrexpp - lag(lrexpp),
+                              lenrol_fd = lenrol - lag(lenrol),
+                              lunch_fd = lunch - lag(lunch)
+                              )
+
+#here, we dont actually difference the year dummy.
+#differncing the year dummy is useful to remove any time invariant componetn 
+#of the year (e.g. if there was a big political event that impacted all groups 
+#in the year). Not differecing them lets us observe the direct effect of the 
+#year 
+
+math_fd <- lm(math4_fd ~ y94 + y95 + y96 + y97 + y98 + lrexpp_fd + 
+                lenrol_fd + lunch_fd, data = mathpnl)
+summary(math_fd)
+#lrexpp_fd estimate says if spending increases by 10pp, then perc of math passed 
+#decreases by 0.34 pp 
+
+#iii 
+
+#lagged rexpp is already included in the data as lrexpp_1.
+mathpnl <- mathpnl %>% group_by(distid) %>% 
+  mutate(lrexpp_1_fd = lrexpp_1 - lag(lrexpp_1))
+
+math_fd_2 <- lm(math4_fd ~ y95 + y96 + y97 + y98 + lrexpp_fd + 
+                lenrol_fd + lunch_fd + lrexpp_1_fd, data = mathpnl)
+summary(math_fd_2)
+#agged is highly significant and positive. 
+# it says a 10pp increase in spending last year means a increase in students passing 
+# of 1.1 pp 
+
+#iv
+coeftest(math_fd_2, vcov. = vcovHC, type = "HC1")
+#lagged spending still significant 
+#SE on both are much higher 
+
+#v 
+coeftest(math_fd_2, vcov. = vcovHAC, type = "HAC1")
 
 
 
