@@ -1308,8 +1308,94 @@ coeftest(math_fd_2, vcov. = vcovHC, type = "HC1")
 #v 
 coeftest(math_fd_2, vcov. = vcovHAC, type = "HAC1")
 
+#### CHAPTER 14 QUESTIONS ####
+
+#### C1 ####
+
+#i
+rent <- lm(lrent ~ y90 + lpop + lavginc + pctstu, data = rental )
+summary(rent)
+#90 says 1990 is very significant (this is 1980 and 1990 data). May be inflation 
+#pctstu estimate says a 10pp increase in students will increase rent by 
+# 5%
+
+#ii
+#if there is correlation between a and the explanatory variables then we have some 
+#ommitted variable bias here 
+
+#iii
+
+rental_fd <- rental %>% group_by(city) %>% mutate(pop_lag = log(pop) - log(lag(pop)),
+                               avginc_lag = log(avginc) - log(lag(avginc)),
+                               pctstu_lag = pctstu - lag(pctstu),
+                               rent_lag = log(rent) - log(lag(rent)))
+
+rent_fd = lm(rent_lag~ pop_lag+ avginc_lag + pctstu_lag, data = rental_fd)
+summary(rent_fd)
+
+#pctsu is still significant, but the effect has fallen alot 
+
+#iv
+rent_fe <- feols(lrent ~ y90 + lpop + lavginc + pctstu| city, data = rental)
+summary(rent_fe)
+#same as above 
+
+#### C2 ####
+
+#i
+crime <- feols(lcrmrte ~ d82 +d83 + d84 + d85 + d86 + d87 + lprbarr + lprbconv + 
+                 lprbpris + lavgsen + lpolpc |county, data = crime4)
+summary(crime)
+#nothing dramatically different to 13.9
+
+#ii
+crime_fe <- feols(lcrmrte ~ 
+                 d82 + d83 +d84 + d85 + d86 +d87 + 
+                 lpolpc + lavgsen + lprbpris + lprbconv + lprbarr +
+                 lwloc + lwsta + lwfed + lwmfg + lwser + 
+                 lwfir + lwtrd + lwtuc + lwcon| county, data = crime4)
+summary(crime_fe)
+
+etable(crime, crime_fe)
+#didnt change the criminal justice variables in any meaningful way 
+
+#iii
+#would expect all wage variables to be negative, which theyre not. 
+#the wage variables are jointly significant 
 
 
+#### C3 ####
+#i
+grant <- feols(hrsemp ~ d88 + d89 + grant + grant_1 + lemploy | fcode, 
+               data = jtrain)
+summary(grant)
+#390 obsv. 81 dropped as there is only one year of data (I think?)
 
+#ii
+#grant says that if a firm for a grant, it does 34.2 more hours of training per 
+#employee in that year. Very signiifant 
 
+#iii 
+#yes, it is surprising. Firms spend all their grant money in the same year 
 
+#iv 
+#yes, large firms do less training. If a firm is 10% larger, they do 0.17 less hours.
+#but this is tiny and insignificant 
+
+#### C4 ####
+#i 
+#ct would be the difference between subsequent numbers, which subtract to one 
+#each time 
+
+#ii 
+ezunem <- ezunem %>% group_by(city) %>% mutate(luclms_fd = luclms - lag(luclms),
+                            ez_fd = ez - lag(ez))
+zones <- feols(luclms_fd ~ ez_fd| city, data = ezunem, vcov = "iid")
+summary(zones)
+#yes, it is at the 1%
+
+#iii
+zone_year <-feols(luclms_fd ~ ez_fd +d81 +d82 + d83 + d84 + d85 +d86 +
+                   d87 +d88| city, data = ezunem, vcov = "iid" )
+summary(zone_year)
+#ez is still significant but only at 5% now 
