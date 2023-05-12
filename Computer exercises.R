@@ -1399,3 +1399,97 @@ zone_year <-feols(luclms_fd ~ ez_fd +d81 +d82 + d83 + d84 + d85 +d86 +
                    d87 +d88| city, data = ezunem, vcov = "iid" )
 summary(zone_year)
 #ez is still significant but only at 5% now 
+
+
+
+
+##### Skipping to chapter 10 (time series) ##### 
+#### 10.7 ####
+intdef$y79 <- ifelse(intdef$year > 1979, 1, 0)
+tbill <- lm(i3 ~ inf + def + y79, data = intdef)
+summary(tbill)
+#there is strong evidence that the interest rate equation changed after 1979.
+
+#### 10.8 ####
+#i
+dumping <- lm(lchnimp ~ lchempi + lgas + lrtwex + befile6 + affile6 + afdec6 +
+              t, data = barium)
+summary(dumping)
+#only the trend is significant
+
+#ii
+linearHypothesis(dumping, c("lchempi = 0", "lgas=0", "lrtwex=0","befile6=0",
+                            "affile6=0","afdec6=0"))
+#cannot reject the null here; theyre jointly insignificant 
+#only the timetrend helps to explain 
+
+#iii
+dumping_2 <- lm(lchnimp ~ lchempi + lgas + lrtwex + befile6 + affile6 + afdec6 +
+                t + feb +mar +apr +may + jun +jul + aug + sep + oct + nov + dec,
+                data = barium)
+summary(dumping_2)
+#no major changes here 
+
+#10.9
+puerto_rico_1 <- lm(lprepop ~ lmincov + lusgnp +t ,
+                    data = prminwge)
+puerto_rico_2 <- lm(lprepop ~ lmincov + lusgnp + lprgnp +t ,
+                  data = prminwge)
+
+huxreg(puerto_rico_1,puerto_rico_2)
+#its significant and the coeff says that a 1% change in PR GNP changes the employ/popul ratio
+# by 0.28%
+#min wage effect becomes larger 
+
+#### 10.10 ####
+fertil <- lm(gfr ~ pe + pe_1 + pe_2 + ww2 + pill, data = fertil3)
+summary(fertil)
+
+fertil3 <- fertil3 %>% mutate(one_lag_diff = pe_1 - pe,
+                              two_lag_diff = pe_2 - pe)
+
+fertil_2 <- lm(gfr ~ pe + one_lag_diff + two_lag_diff + ww2 + pill, data = fertil3)
+summary(fertil_2)
+#see s.e. on pe for the se of LRP 
+
+#### 10.11 ####
+#i
+indiana <- lm(luclms ~ year + feb  +mar +apr+ may+ jun+ jul +aug +sep +oct +nov+
+              dec, data = ezanders)
+summary(indiana)
+#negative time trend over the period. Each year, 16.6% less claims. 
+#yes evidence of seasonality 
+#time trend coeff way out for some reason 
+
+#ii
+ezanders$ez <- ifelse(ezanders$year >= 1984,1,0)
+indiana_2 <- lm(luclms ~ year + feb  +mar +apr+ may+ jun+ jul +aug +sep +oct +nov+
+                dec + ez, data = ezanders)
+summary(indiana_2)
+100*(exp(-0.50803)-1)
+#reduced claims 39.8%
+
+#iii
+#nothing else big happened in 1984 that mightve also been reducing the unemploy
+#claims, whilst being pos. correlated with ez (no ommited variables)
+# hopefully controlling for seasonablity and time trend is sufficient 
+
+#### 10.12 #### 
+#i 
+fertil3 <- fertil3 %>% mutate(tsqrd = t^2)
+births <- lm(gfr ~ t + tsqrd, data = fertil3)
+birth_resids <- births$residuals
+#this takes time trend out 
+
+#ii
+births_two <- lm(birth_resids ~ pe  + ww2 + pill + t + tsqrd,
+                 data = fertil3)
+summary(births_two)
+#R^2 here is 0.6 vs 0.7 before. 
+#still have decent amount of explanatory power after netting out trend 
+
+#iii
+fertil3 <- fertil3 %>% mutate(tcube = t^3)
+birth_three <- lm(gfr ~ pe  + ww2 + pill + t + tsqrd + tcube, data = fertil3)
+summary(birth_three)
+#yes, very statisticaly signif. Curve fitting? 
