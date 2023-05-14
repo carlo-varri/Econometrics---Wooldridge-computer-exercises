@@ -1493,3 +1493,142 @@ fertil3 <- fertil3 %>% mutate(tcube = t^3)
 birth_three <- lm(gfr ~ pe  + ww2 + pill + t + tsqrd + tcube, data = fertil3)
 summary(birth_three)
 #yes, very statisticaly signif. Curve fitting? 
+
+#### 10.13 ####
+#i
+consumption <- lm(gc ~ gy, data = consump)
+summary(consumption)
+#this says that a 1 pp change in income leads to a 0.57 pp change in consumption
+#income is highly s.s.
+
+#ii
+consumption_two <- lm(gc ~ gy +gy_1, data = consump)
+summary(consumption_two)
+#insignificant - weak evidence for lagged income change having impact on 
+#consumption 
+
+#iii
+consumption_three <- lm(gc ~ gy + r3 + r3_1 + r3_2, data = consump)
+summary(consumption_three)
+#very weak evidence real interest rate effects consumption. But we would expect 
+#it to work with lags, anyway ... or not running the regression above with the 
+#lagged rates 
+
+#### 10.14####
+#i
+fertil <- lm(gfr ~ pe + pe_1 + pe_2 + pe_3 + pe_4 + ww2 + pill, data = fertil3)
+summary(fertil)
+linearHypothesis(fertil, c("pe_3 = 0","pe_4 = 0" ))
+#jointly very insignificant 
+
+#ii
+fertil3 <- fertil3 %>% mutate(pe_1LRP = pe_1- pe,
+                              pe_2LRP = pe_2 - pe,
+                              pe_3LRP = pe_3 - pe,
+                              pe_4LRP = pe_4 - pe)
+fertil3_LRP <- lm(gfr ~ pe + pe_1LRP + pe_2LRP+ pe_3LRP+ pe_4LRP + ww2+ pill, 
+                  data = fertil3)
+summary(fertil3_LRP)
+fertil3_LRP$coefficients[2]
+#LRP = 0.12419, se = 0.029572
+
+fertil3_LRP_original <- lm(gfr ~ pe + pe_1LRP + pe_2LRP + ww2+ pill, 
+                  data = fertil3)
+summary(fertil3_LRP_original)
+fertil3_LRP_original$coefficients[2]
+#LRP = 0.1007191, se = 0.02980
+
+#LRP is larger with more years as expected 
+
+#iii
+fertil3 <- fertil3 %>%  mutate(a = pe + pe_1 + pe_2 + pe_3 + pe_4,
+                               b = pe_1 + 2*pe_2 + 3*pe_3 + 4*pe_4,
+                               c = pe_1 + 4*pe_2 + 9*pe_3 + 16*pe_4)
+fertil_polynomial <- lm(gfr ~ a + b + c + ww2 + pill, data = fertil3)
+summary(fertil_polynomial)
+#LRP = a + (a + b + c) + (a + 2b + 4c) + (a + 3b + 9c) = 0.135 
+
+
+#### 10.15 ####
+#i
+#would expect B1 to be postive (more production should mean more earnings),
+#and B2 to be negative (higher risk free rate would adjust price of risky assets 
+#downward and slow the economy; however may be some reverse causaility here(rates higher
+#when the economy booming) so that would indicate a higher B2)
+
+#ii
+return <- lm(rsp500 ~ pcip + i3, data = volat)
+summary(return)
+#pcip is positive but little evidence of an effect on returns 
+# i3 is negative and significant. Say if T bill rate changes by 1 pp, return drops 
+#by 1.36 pp 
+
+#iii
+#i3 is s.s. at 2%
+
+#iv
+#current 3month Tbill rate reduces the return. But this is not known in advance of 
+#the period either. 
+
+#### 10.16 ####
+#i 
+cor(intdef$inf, intdef$def)
+#pos correlation betweeen inflation and defecit 
+
+#ii
+tbill <- lm(i3 ~ inf + inf_1 + def + def_1, data = intdef )
+summary(tbill)
+
+#iii
+#LRP = 0.3426 + 0.3820 
+0.3426 + 0.3820 
+# = 0.72 - this is quite a lot larger than 0.61 as presented before 
+
+#iv
+linearHypothesis(tbill, c("def_1 = 0", "inf_1=0"))
+#theyre jointly very significant in explaining T bill rates 
+
+#getting quite different reults to answers here and not sure why 
+
+#### 10.17 ####
+#i
+#beltlaws in 1986 Jan
+#speed law was from 1997 May
+
+#ii
+accidents <- lm(ltotacc ~ t + feb + mar + apr + may + jun + jul +aug + sep +
+                  oct + nov + dec, data = traffic2)
+summary(accidents)
+#time trends says each month, total accidents increase by 0.275% 
+#evidence of seasonality and the F statistic for joint significance 
+#of the monthly dummies is F = 5.15 (very significant)
+
+#iii
+accidents_two <- lm(ltotacc ~ t + feb + mar + apr + may + jun + jul +aug + sep +
+                  oct + nov + dec + wkends + unem + spdlaw + beltlaw, data = traffic2)
+summary(accidents_two)
+#unempl says less unemployment leads to more traffic accidents 
+#could mean more people in cars commuting etc. 
+
+#iv 
+#spdlaw says the spdlaw led to 5% less crashes - but the speed went up! could be 
+#more caution, or a confounder. 
+#and beltlaw led to 9.5% more crashes. Could be that people felt safer with belts so took more risks 
+
+#v 
+mean(traffic2$prcfat)
+#0.88% led to at leads one fatality. Seems about right yes. 
+
+#vi 
+accidents_three <- lm(prcfat ~ t + feb + mar + apr + may + jun + jul +aug + sep +
+                      oct + nov + dec + wkends + unem + spdlaw + beltlaw, data = traffic2)
+summary(accidents_three)
+#speed law now highly significant and positive. Says that when the speed went up, 
+#the percentage of accidents resulting in a death went up by 0.067pp. 
+#beltlaw says that when seatbelts mandated, the perpercentage of accidents 
+#resulting in a death went down by 0.0295 pp 
+
+
+
+
+
