@@ -1628,6 +1628,93 @@ summary(accidents_three)
 #beltlaw says that when seatbelts mandated, the perpercentage of accidents 
 #resulting in a death went down by 0.0295 pp 
 
+#### CHAPTER 11 #### 
+#### 11.8 ####
+#i
+hseinv_without_fr <- hseinv[-1,]
+cor(hseinv_without_fr$linvpc, hseinv_without_fr$linvpc_1)
+#correlation of 0.6391246 - stable 
+
+detrended <- lm(linvpc ~ t, data = hseinv)
+detrended_resids <- detrended$residuals
+cor(detrended_resids, lag(detrended_resids), use = "complete.obs")
+#little evidence of unit root
+
+cor(hseinv$lprice, hseinv$lprice_1, use = "complete.obs")
+#high correlation - evidence of persistence
+
+detrended_price <- lm(lprice ~ t, data = hseinv)
+detrended_resids_price <- detrended_price$residuals
+cor(detrended_resids_price, lag(detrended_resids_price), use = "complete.obs")
+#still quite large. Cant rule out unit root
+
+#ii
+hseinv <- hseinv %>% mutate(lprice_diff = lprice - lprice_1)
+investment <- lm(linvpc ~ lprice_diff + t, data = hseinv)
+summary(investment)
+#B1 is 3.88, and says that when the price rises 1 pp, the investment per capita
+# rises by 3.87 pp. Very s.s. 
+
+#iii
+detrended <- lm(invpc ~ t, data = hseinv)
+detrended_resids <- detrended$residuals
+investment <- lm(detrended$residuals ~ lprice_diff + t, data = hseinv)
+summary(investment)
+#R^2 has fallen from 0.5 to 0.29 - we've removed the explanatory power of 
+#t by detrending first 
+
+hseinv <- hseinv %>% mutate(linvpc_diff = linvpc - linvpc_1)
+investment <- lm(linvpc_diff ~ lprice_diff + t, data = hseinv)
+summary(investment)
+#now log of price changes is insignificant at 10% even. 
+#time trend is insignificant as taking differences removes the time trend  
+#the differnece in results after differencing these variables indicates that 
+#both are unit root 
+
+#### 11.9 ####
+#i
+earnings <- lm(ghrwage ~ goutphr + goutph_1, data = earns)
+summary(earnings)
+#yes, lagged output is very s.s
+
+earns <- earns %>% mutate(goutph_diff = goutph_1- goutphr)
+earnings <- lm(ghrwage ~ goutphr + goutph_diff, data = earns)
+summary(earnings)
+
+#H0: theta = 1 
+(1.185999 - 1)/0.203142
+#not s.s. so cannot reject H0 - this is evidence for B1 + B2 = 1
+
+#iii
+earnings <- lm(ghrwage ~ goutphr + goutph_1 + goutph_2, data = earns)
+summary(earnings)
+#no, doesnt need to be in - not s.s (or even close)
+
+#### 11.10 ####
+#i
+nyse <- nyse %>% mutate(return_sqrd = return_1^2)
+efh <- lm(return ~ return_1 +return_sqrd, data = nyse)
+summary(efh)
+
+#ii
+#H0: B1 = 0, B2 = 0
+
+linearHypothesis(efh, c("return_1 = 0","return_sqrd = 0" ))
+#do not reject this at 10% (but close)
+
+#iii
+nyse <- nyse %>% mutate(return_2 = lag(return_1))
+efh <- lm(return ~ return_1 +return_1:return_2, data = nyse)
+summary(efh)
+linearHypothesis(efh, c("return_1 = 0","return_1:return_2 = 0" ))
+#he null can still be stated as in prev. part no past values of return, or any
+#functions of them, should help us predict returnt
+#so cannot reject H0. 
+
+#iv
+#EFH seems to hold - cant predict stock returns based on past returns.
+# R^2s also very low 
+
 
 
 
