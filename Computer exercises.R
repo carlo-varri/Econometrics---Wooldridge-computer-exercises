@@ -1716,6 +1716,15 @@ linearHypothesis(efh, c("return_1 = 0","return_1:return_2 = 0" ))
 # R^2s also very low 
 
 
+#### 11.11 ####
+#i
+inflation <- lm(cinf ~ cunem, data = phillips)
+summary(inflation)
+#B1 is very s.s. Says that for a 1pp fall in unemployment, inflation rises by 
+# 0.83 pp
+
+#ii
+#R^2 here is 0.1348, and the example was 0.108. So this fits the data better. 
 
 
 
