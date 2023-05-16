@@ -1726,5 +1726,107 @@ summary(inflation)
 #ii
 #R^2 here is 0.1348, and the example was 0.108. So this fits the data better. 
 
+#### 11.12 ####
+#i
+fertility <- lm(cgfr ~ cpe + cpe_1 + cpe_2 + t, data = fertil3)
+summary(fertility)
+#no, a time trend isnt nexessary in a first differenced equation 
+
+#ii 
+fertility <- lm(cgfr ~ cpe + cpe_1 + cpe_2 + ww2 + pill, data = fertil3)
+summary(fertility)
+linearHypothesis(fertility, c("ww2=0", "pill = 0"))
+#no, theyre not jointly significant at the 5% level 
+
+#iii
+fertil3 <- fertil3 %>% mutate(LRPfirstlag = cpe_1 - cpe,
+                              LRPsecondlag = cpe_2 - cpe)
+fertility <- lm(cgfr ~ cpe + LRPfirstlag + LRPsecondlag + ww2 + pill, data = fertil3)
+summary(fertility)
+#LRP is -0.03829, se = 0.06216
+#this is wrong but not sure why 
+
+#### 11.13 ####
+#i
+invent <- lm(cinven ~ cgdp, data = inven)
+summary(invent)
+#cgdp is positive and very significant 
+
+#ii
+invent <- lm(cinven ~ cgdp + r3, data = inven)
+summary(invent)
+#r3 is not significant, but its contemporaneous 
+
+#iii 
+invent <- lm(cinven ~ cgdp + cr3, data = inven)
+summary(invent)
+#no, still not significant 
+
+#### 11.14 ####
+#i
+#H0: B1 = 0
+#H1: B1 =/= 0 
+
+pih <- lm(gc ~ gc_1, data = consump)
+summary(pih)
+#this provides strong evidence against the pih 
+
+#ii
+consump <- consump %>% mutate(lagi = lag(i3))
+pih <- lm(gc ~ gc_1 + gy_1 + lagi, data = consump)
+summary(pih)
+linearHypothesis(pih, c("gy_1 = 0", "lagi=0"))
+#no, not significant jointly 
+
+
+#### 11.15 ####
+#i
+unemployment <- lm(unem ~ unem_1, data = phillips)
+summary(unemployment)
+#fitted val for 1997 is 5.5% (or could take 1996 val and apply model for roughly
+#same result)
+#actual val was 4.9%
+
+#ii
+unemployment <- lm(unem ~ unem_1 +inf_1, data = phillips)
+summary(unemployment)
+#yes, very significant. Says that a 1pp rise in inflation leads to 0.18 pp rise in 
+#unemployment in the next period 
+
+#iii
+unemployment$fitted.values[50]
+#or 
+1.29642 + 0.64948*5.4 + 0.18301*3.0
+#first estimate is correct (1997 actual is 4.9), second is not close 
+
+#iv 
+phillips <- phillips %>% mutate(unem_ci = unem_1 - 5.4,
+                                inf_ci = inf_1 - 3)
+ci <- lm(unem ~ unem_ci + inf_ci, data = phillips)                                
+summary(ci)
+#ci is 5.35263+/- 1.96* 0.11909 
+5.35263 + 1.96* 0.11909 
+5.35263 - 1.96* 0.11909 
+#no, not in the ci 
+#used the wrong method for s.e. here - se eqn 6.4 where delta is the residual 
+#standard error from the regression in ii 
+
+#### 11.16 ####
+#
+foa <- lm(prcfat ~ prcfat_1, data = traffic2)
+summary(foa)
+#coeff is 0.71  - yes, theres some concern this is a unit root 
+(0.70939 - 1)/ 0.06893
+#however, reject H0 that coeff = 1 
+
+traffic2 <- traffic2 %>% mutate(unem_1 = lag(unem))
+foa <- lm(unem ~ unem_1, data = traffic2)
+summary(foa)
+#yes, big risk this is a unit root 
+(0.95726-1)/0.03078
+#dont reject H0 of coeff = 1
+
+
+
 
 
