@@ -1812,7 +1812,7 @@ summary(ci)
 #standard error from the regression in ii 
 
 #### 11.16 ####
-#
+#i
 foa <- lm(prcfat ~ prcfat_1, data = traffic2)
 summary(foa)
 #coeff is 0.71  - yes, theres some concern this is a unit root 
@@ -1826,7 +1826,44 @@ summary(foa)
 (0.95726-1)/0.03078
 #dont reject H0 of coeff = 1
 
+#ii
+traffic2 <- traffic2 %>% mutate(prcfat_fd = prcfat - prcfat_1,
+                                unem_fd = unem - unem_1)
+                                
+fatalities <- lm(prcfat~ t + feb + mar + apr + may + jun + jul +aug + sep +
+                 oct + nov + dec + wkends + unem_fd + spdlaw + beltlaw, data = traffic2)
+summary(fatalities)
+#crashes are 8pp more fatal in July 
+#the laws are very statistically insignificant, as is time trend (as expected)
+
+#iii
+#no, FDing loses alot of interesting results, and here we probably didnt need to 
+#(prcfat's autocorr coeff was 0.71)
 
 
+#### 11.17 ####
+#i
+phillips <- head(phillips, -5)
+
+pc <- lm(cinf~ unem, data = phillips)
+summary(pc)
+#no, intercept and slope coeff have not changed much 
+
+#ii
+#natural rate of unemploy = B0/-B1
+pc$coefficients[1]/ - pc$coefficients[2]
+# = 5.488497
+
+#iii
+foc <- lm(unem~ unem_1, data = phillips)
+summary(foc)
+#0.73869 
+#probably not close enough to one to motivate FDing 
+
+#iv
+pc_2 <- lm(cinf~ cunem, data = phillips)
+summary(pc_2)
+#R2 here is 0.1308, vs 0.1012 previously. So chnage in unemployment is a better 
+#predictor of cinf 
 
 
