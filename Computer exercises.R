@@ -6,6 +6,7 @@ library(car)
 library(lmtest)
 library(huxtable)
 library(AER)
+library(EnvStats)
 
 ###### Chapter 3 exercises ####### 
 
@@ -1866,4 +1867,189 @@ summary(pc_2)
 #R2 here is 0.1308, vs 0.1012 previously. So chnage in unemployment is a better 
 #predictor of cinf 
 
+#### CHAPTER 12 ####
+#### 12.7 ####
+library(EnvStats)
+fertil <- lm(cgfr~ cpe+ cpe_1 + cpe_2, data= fertil3)
+serialCorrelationTest(fertil)
+# rho = 0.2905432, p value 0.000658788 - this is evidence of serial correlation 
+
+#### 12.8 ####
+price <- lm(gprice ~ gwage + gwage_1 + gwage_2+ gwage_3+ gwage_4+ gwage_5+ gwage_6
+            + gwage_7+ gwage_8+ gwage_9+ gwage_10+ gwage_11+ gwage_12, data = wageprc)
+serialCorrelationTest(price)
+#strong evidence of serial correlation rho = 0.5026348
+
+#ii
+wageprc <- wageprc %>% mutate(gwage_CO = (1-0.5026348)*gwage,
+                              gwage_1_CO = (1-0.5026348)*gwage_1,
+                              gwage_2_CO = (1-0.5026348)*gwage_2,
+                              gwage_3_CO = (1-0.5026348)*gwage_3,
+                              gwage_4_CO = (1-0.5026348)*gwage_4,
+                              gwage_5_CO = (1-0.5026348)*gwage_5,
+                              gwage_6_CO = (1-0.5026348)*gwage_6,
+                              gwage_7_CO = (1-0.5026348)*gwage_7,
+                              gwage_8_CO = (1-0.5026348)*gwage_8,
+                              gwage_9_CO = (1-0.5026348)*gwage_9,
+                              gwage_10_CO = (1-0.5026348)*gwage_10,
+                              gwage_11_CO = (1-0.5026348)*gwage_11,
+                              gwage_12_CO = (1-0.5026348)*gwage_12, 
+                              gprice_CO = (1-0.5026348)*gprice)
+                        
+price <- lm(gprice_CO ~ gwage_CO + gwage_1_CO + gwage_2_CO+ gwage_3_CO+ gwage_4_CO+
+              gwage_5_CO+ gwage_6_CO+ gwage_7_CO+ gwage_8_CO+ gwage_9_CO+ 
+              gwage_10_CO+ gwage_11_CO+ gwage_12_CO, data = wageprc)
+summary(price)
+
+sum(price$coefficients[-1])
+
+#### 12.9 ####
+#i
+invent <- lm(cinven ~ cgdp, data = inven)
+serialCorrelationTest(invent)
+#no evidence of serial correlation here
+
+#ii
+
+
+#### 12.10 #####
+#i
+nyse <- nyse[complete.cases(nyse),]
+emh <- lm(return ~ return_1, data = nyse)
+resid_emh <- resid(emh)^2
+emh_het <- lm(resid_emh ~ return_1, data = nyse)
+length(emh_het$fitted.values[emh_het$fitted.values<0])
+#12 less than zero 
+
+#ii
+nyse <- nyse %>% mutate(return_1_sqrd = return_1^2)
+emh_het <- lm(resid_emh ~ return_1 +return_1_sqrd , data = nyse)
+length(emh_het$fitted.values[emh_het$fitted.values<0])
+summary(emh_het)
+
+#none negative 
+
+#iii
+nyse <- nyse %>% mutate(fitted_vals = sqrt(emh_het$fitted.values),
+                        return_wls = return/fitted_vals,
+                        return_1_wls = return_1/fitted_vals)
+wls <- lm(return_wls ~ return_1_wls, data = nyse)
+summary(wls)
+#11.16 gives B1 as 0.059, with se of 0.038- so H0: B1 = 0 cannot be rejected. 
+#here we have B1 as 0.050, with se of 0.048 - again cant reject 
+
+#iv
+emh <- lm(return ~ return_1, data = nyse)
+resid_emh <- resid(emh)^2
+lag_resid_emh <- lag(resid_emh)^2
+arch <- lm(resid_emh~ lag_resid_emh)
+
+nyse <- nyse[-1,] %>% mutate(fitted_vals = sqrt(arch$fitted.values),
+                        return_wls = return/fitted_vals,
+                        return_1_wls = return_1/fitted_vals)
+wls <- lm(return_wls ~ return_1_wls, data = nyse)
+summary(wls)
+
+#getting results slightly off in prev two, think my method is right though
+
+#still, once accounting for heteroskedactiy via WLS, there is no evidence that 
+#return depends on return_1
+
+#### 12.11 ####
+#i 
+vote <- lm(demwins ~ I + DPER + I(n*I) + I(p15*I), data = fair)
+summary(vote)
+#again slightly off results 
+#note: LPM means we have to appeal to asymptotics. But only have 20 obsvs. 
+
+#ii
+length(vote$fitted.values[vote$fitted.values<0])
+#one 
+length(vote$fitted.values[vote$fitted.values>1])
+#two greater than one 
+
+#iii
+fair <- fair %>% mutate(fitted_vals = vote$fitted.values,
+                        dem_win_predics = ifelse(fitted_vals>0.5,1,0))
+sum(fair$dem_win_predics == fair$demwins)
+#15/20 are correct 
+
+#iv
+#yes, predicted it correctly 
+#(could have plugged numbers in with multiplications in place of interactions)
+
+#iv 
+vote <- lm(demwins ~ I + DPER + I(n*I) + I(p15*I), data = fair)
+data <- data.frame(resid_sqrd = resid(vote),
+                   resid_sqrd_lag = lag(resid(vote)))
+data <- data[-1,]
+
+ar1 <- feols(resid_sqrd ~ resid_sqrd_lag, vcov = "hetero", data = data )
+summary(ar1)
+#little evidence of serial correlation 
+
+#vi
+vote <- feols(demwins ~ I + DPER + I(n*I) + I(p15*I), data = fair, vcov= "hetero")
+summary(vote)
+
+#key note: s.e's in LPM have only asymptotic justification. with only 20 observations 
+# is not clear we should prefer the heteroskedasticity-robust standard errors to the usual ones.
+
+#### 12.12 ####
+#i
+consumption <- lm(gc ~ gy, data = consump)
+#would take residuals and regress residual on its lag 
+serialCorrelationTest(consumption)
+#rho = -0.08463375, p val 0.9895258. No evidence of serial corr 
+
+#ii
+consump <- consump[complete.cases(consump),]
+
+pih <- lm(gc ~ gc_1, data = consump)
+resid_pih <- resid(pih)^2
+hetero <- lm(resid_pih ~ gc_1 + gc_1_sqrd,  data = consump)
+summary(hetero)
+#F test p value is 0.3 so no evidence of heterosk in this AR(1) model 
+
+#### 12.13 ###
+#i 
+pw <- lm(lchnimp~ lchempi + lgas + lrtwex + befile6 + affile6 + afdec6, data = barium)
+residuals <- resid(pw)
+lag_residuals <- lag(residuals)
+
+rho <- lm(residuals ~ lag_residuals)
+rho_estimate <- rho$coefficients[[2]]
+
+barium <- barium %>% mutate(lchnimp_pw = lchnimp*(1-rho_estimate),
+                            lgas_pw = lgas*(1-rho_estimate),
+                            lrtwex_pw = lrtwex*(1-rho_estimate),
+                            befile6_pw = befile6*(1-rho_estimate),
+                            affile6_pw = affile6*(1-rho_estimate),
+                            afdec6_pw = afdec6*(1-rho_estimate),
+                            lchempi_pw = lchempi*(1-rho_estimate) )
+                            
+
+pw_ols <- lm(lchnimp_pw~ lchempi_pw + lgas_pw + lrtwex_pw + befile6_pw + 
+               affile6_pw + afdec6_pw, data = barium)
+summary(pw_ols)
+residuals <- resid(pw_ols)
+lag_residuals <- lag(residuals)
+rho <- lm(residuals ~ lag_residuals)
+rho_estimate <- rho$coefficients[[2]]
+
+barium <- barium %>% mutate(lchnimp_pw = lchnimp*(1-rho_estimate),
+                            lgas_pw = lgas*(1-rho_estimate),
+                            lrtwex_pw = lrtwex*(1-rho_estimate),
+                            befile6_pw = befile6*(1-rho_estimate),
+                            affile6_pw = affile6*(1-rho_estimate),
+                            afdec6_pw = afdec6*(1-rho_estimate),
+                            lchempi_pw = lchempi*(1-rho_estimate) )
+
+
+pw_ols <- lm(lchnimp_pw~ lchempi_pw + lgas_pw + lrtwex_pw + befile6_pw + 
+               affile6_pw + afdec6_pw, data = barium)
+summary(pw_ols)
+#very similar to CO estimates 
+#barium is a large dataset so dropping the first obs (CO) doesnt really make a 
+#difference 
 
