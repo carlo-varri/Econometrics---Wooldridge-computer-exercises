@@ -2053,3 +2053,42 @@ summary(pw_ols)
 #barium is a large dataset so dropping the first obs (CO) doesnt really make a 
 #difference 
 
+#### 12.14 ####
+#i
+traffic <- lm(prcfat ~ t + feb + mar + apr + may + jun + jul +aug + sep +
+     oct + nov + dec + wkends + unem + spdlaw + beltlaw, data = traffic2)
+residuals <- resid(traffic)
+residuals_lag <- lag(residuals)
+
+ar1_test <- lm(residuals ~ residuals_lag)
+summary(ar1_test)
+#evidence of AR1 serial correlation here - 0.2816415 with 0.00353 p val 
+
+serialCorrelationTest(traffic)
+#confirming with different approach 
+
+#strict exogeneity reasonable: unexplained changes in prcfat today do not cause 
+#future changes in the state-wide unemployment rate
+#remember: strict exogenity fails if changes in y affect future values of x. 
+#this is because xt+1 are then correlated with ut, as ut causes changes in yt. 
+
+#ii
+#I'm going to use fixest package for this rather than Newey West method 
+summary(traffic)
+#speedlaw is curenly pos and significant at 1%, beltlaw is neagtive and 
+#insignicant at 20%
+
+coeftest(traffic, vcov. = vcovHAC, type = "HAC4")
+#p values have increased, but speedlaw is still significant at 1% and 
+#beltlaw insigniciant at 35% 
+
+#iii
+#I would run traffic, saving the residuals and lagged residuals 
+#regress residuals on lagged to find rho 
+#adjust traffic to account for rho (all variables - rho)
+#re-run the regression with the adjusted data, and perform the same steps once more
+#i.e. take residuals, find rho, adjust the model again) 
+#arrive at an iterated PW model 
+ 
+
+
